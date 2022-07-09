@@ -1,12 +1,12 @@
-resource "aws_vpc" "vpc" {
-  cidr_block = var.cidr
-  tags = {
-    Name = var.vpc_name
+data "aws_vpc" "vpc" {
+  filter {
+    name   = "tag:Name"
+    values = [var.vpc_name]
   }
 }
 
 resource "aws_subnet" "subnet" {
-  vpc_id = aws_vpc.vpc.id
+  vpc_id = data.aws_vpc.vpc.id
   for_each = var.subnet_config
   cidr_block = each.value.cidr
   tags = {
@@ -29,7 +29,7 @@ resource "aws_nat_gateway" "nat" {
 }
 
 resource "aws_route_table" "route_table" {
-  vpc_id = aws_vpc.vpc.id
+  vpc_id = data.aws_vpc.vpc.id
   for_each = local.nats
 
   dynamic "route" {
@@ -48,13 +48,13 @@ resource "aws_route_table" "route_table" {
 resource "aws_security_group" "sec_group" {
   for_each = var.subnet_config
   name = each.value.security_group_name
-  vpc_id = aws_vpc.vpc.id
+  vpc_id = data.aws_vpc.vpc.id
 
   ingress {
     from_port        = 22
     to_port          = 22
     protocol         = "tcp"
-    cidr_blocks      = [aws_vpc.vpc.cidr_block]
+    cidr_blocks      = [data.aws_vpc.vpc.cidr_block]
   }
 
   egress {
